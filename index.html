@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Squallor — Archivio Audio</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Oswald:wght@300;400;600&family=VT323&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg:#0a0c0e; --panel:#0f1318; --panel2:#141a20; --border:#1e2a35;
+      --amber:#e8a020; --amber-dim:#7a4e0a;
+      --green:#2ecc71; --green-dim:#0d4a22;
+      --red:#e74c3c; --cyan:#00d4ff; --cyan-dim:#003d4d;
+      --gold:#f0c040;
+      --text:#c8d8e0; --text-dim:#4a6070;
+      --font-mono:'Share Tech Mono',monospace;
+      --font-disp:'Oswald',sans-serif;
+      --font-crt:'VT323',monospace;
+    }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+    html{scroll-behavior:smooth;}
+    body{background:var(--bg);color:var(--text);font-family:var(--font-mono);min-height:100vh;overflow-x:hidden;}
+    body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.16) 2px,rgba(0,0,0,.16) 4px);pointer-events:none;z-index:9999;}
+
+    header{border-bottom:2px solid var(--amber-dim);padding:1.8rem 2rem 1.2rem;display:flex;align-items:flex-end;gap:2rem;background:linear-gradient(180deg,#0d1015 0%,var(--bg) 100%);position:relative;}
+    header::after{content:'';position:absolute;bottom:-1px;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--amber),transparent);opacity:.6;}
+    .logo-block .brand{font-family:var(--font-crt);font-size:4rem;color:var(--amber);letter-spacing:.15em;text-shadow:0 0 20px rgba(232,160,32,.5),0 0 60px rgba(232,160,32,.15);line-height:.9;}
+    .logo-block .sub{font-family:var(--font-disp);font-size:.72rem;font-weight:300;color:var(--text-dim);letter-spacing:.4em;text-transform:uppercase;margin-top:.5rem;}
+    .header-meta{margin-left:auto;text-align:right;font-size:.68rem;color:var(--text-dim);line-height:1.9;}
+    .header-meta span{color:var(--amber);}
+
+    #now-playing-bar{position:sticky;top:0;z-index:100;background:var(--panel);border-bottom:1px solid var(--border);padding:.65rem 2rem;display:flex;align-items:center;gap:1.2rem;flex-wrap:wrap;}
+    .np-label{font-family:var(--font-disp);font-size:.62rem;font-weight:600;letter-spacing:.3em;color:var(--green);text-transform:uppercase;white-space:nowrap;}
+    .np-label.blinking{animation:blink 1s step-end infinite;}
+    @keyframes blink{50%{opacity:0;}}
+    #np-title{font-family:var(--font-crt);font-size:1.3rem;color:var(--cyan);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:0 0 10px rgba(0,212,255,.4);min-width:0;}
+    #main-audio{flex:0 0 320px;}
+
+    .tab-bar{display:flex;border-bottom:1px solid var(--border);padding:0 2rem;background:var(--panel);}
+    .tab-btn{font-family:var(--font-disp);font-size:.72rem;font-weight:400;letter-spacing:.25em;text-transform:uppercase;color:var(--text-dim);background:none;border:none;border-bottom:2px solid transparent;padding:.75rem 1.4rem;cursor:pointer;transition:color .15s,border-color .15s;margin-bottom:-1px;}
+    .tab-btn:hover{color:var(--text);}
+    .tab-btn.active{color:var(--amber);border-bottom-color:var(--amber);}
+
+    main{padding:2rem;max-width:1100px;margin:0 auto;}
+    .tab-panel{display:none;}
+    .tab-panel.active{display:block;}
+
+    .album-section{margin-bottom:2.8rem;}
+    .album-header{display:flex;align-items:center;gap:1rem;margin-bottom:1rem;padding-bottom:.6rem;border-bottom:1px solid var(--border);}
+    .album-icon{font-size:1.1rem;color:var(--amber);}
+    .album-title{font-family:var(--font-disp);font-size:1rem;font-weight:400;letter-spacing:.25em;text-transform:uppercase;color:var(--amber);}
+    .album-count{font-size:.65rem;color:var(--text-dim);margin-left:auto;}
+
+    .track-list{display:flex;flex-direction:column;gap:3px;}
+    .track{display:grid;grid-template-columns:2.2rem 1fr auto;align-items:center;gap:.8rem;padding:.55rem .8rem;border:1px solid transparent;border-radius:3px;cursor:pointer;transition:background .15s,border-color .15s;position:relative;overflow:hidden;}
+    .track::before{content:'';position:absolute;left:0;top:0;bottom:0;width:2px;background:var(--cyan);transform:scaleY(0);transform-origin:bottom;transition:transform .2s;}
+    .track:hover{background:var(--panel2);border-color:var(--border);}
+    .track:hover::before{transform:scaleY(1);}
+    .track.active{background:var(--panel2);border-color:var(--cyan-dim);}
+    .track.active::before{transform:scaleY(1);}
+
+    .track.song-track::before{background:var(--gold);}
+    .track.song-track.active{border-color:rgba(240,192,64,.3);}
+    .track.song-track.active .track-name{color:var(--gold);}
+    .track.song-track.active .track-num{color:var(--gold);}
+
+    .track-num{font-size:.7rem;color:var(--text-dim);text-align:center;}
+    .track.active .track-num{color:var(--cyan);}
+    .track-name{font-size:.82rem;color:var(--text);line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    .track.active .track-name{color:var(--cyan);}
+
+    .track-type{font-size:.6rem;padding:.15rem .45rem;border-radius:2px;white-space:nowrap;}
+    .type-mp3{background:var(--green-dim);color:var(--green);}
+    .type-song{background:rgba(240,192,64,.12);color:var(--gold);}
+
+    .vu{display:none;gap:2px;align-items:flex-end;height:14px;}
+    .track.active .vu{display:flex;}
+    .track.active .vu-num{display:none;}
+    .vu span{width:3px;background:var(--cyan);animation:vu .6s ease-in-out infinite alternate;border-radius:1px;}
+    .track.song-track .vu span{background:var(--gold);}
+    .vu span:nth-child(1){height:6px;animation-delay:0s;}
+    .vu span:nth-child(2){height:10px;animation-delay:.1s;}
+    .vu span:nth-child(3){height:14px;animation-delay:.2s;}
+    .vu span:nth-child(4){height:8px;animation-delay:.05s;}
+    @keyframes vu{from{transform:scaleY(.3);}to{transform:scaleY(1);}}
+    .track.active.paused .vu span{animation-play-state:paused;}
+
+    footer{border-top:1px solid var(--border);padding:1.5rem 2rem;text-align:center;font-size:.65rem;color:var(--text-dim);line-height:2;}
+    footer a{color:var(--amber-dim);text-decoration:none;}
+    footer a:hover{color:var(--amber);}
+
+    @media(max-width:640px){
+      .logo-block .brand{font-size:2.6rem;}
+      #main-audio{flex:1;min-width:0;}
+      .tab-btn{padding:.65rem .8rem;font-size:.65rem;}
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo-block">
+    <div class="brand">SQUALLOR</div>
+    <div class="sub">archivio audio — canzoni · spezzoni</div>
+  </div>
+  <div class="header-meta">
+    <span>9</span> canzoni &nbsp;·&nbsp; <span>34</span> spezzoni<br>
+    fonte: squallor.com<br>
+    archivio personale non commerciale
+  </div>
+</header>
+
+<div id="now-playing-bar">
+  <div class="np-label blinking">● REC</div>
+  <div id="np-title">— seleziona una traccia —</div>
+  <audio id="main-audio" controls></audio>
+</div>
+
+<div class="tab-bar">
+  <button class="tab-btn active" data-tab="canzoni">♫ Canzoni</button>
+  <button class="tab-btn"        data-tab="spezzoni">◈ Spezzoni</button>
+</div>
+
+<main>
+
+<!-- TAB CANZONI -->
+<div class="tab-panel active" id="tab-canzoni">
+  <div class="album-section">
+    <div class="album-header">
+      <span class="album-icon">♫</span>
+      <span class="album-title">Canzoni</span>
+      <span class="album-count">9 brani · MP3</span>
+    </div>
+    <div class="track-list">
+      <div class="track song-track" data-src="audio/mp3/'O Ricuttaro 'Nnammurato.mp3" data-title="'O Ricuttaro 'Nnammurato">
+        <div class="track-num"><span class="vu-num">01</span><div class="vu"><span></span><span></span><span></span><span></span></div></div>
+        <div class="track-name">'O Ricuttaro 'Nnammurato</div><span class="track-type type-song">MP3</span>
+      </div>
+      <div class="track song-track" data-src="audio/mp3/A Chi Lo Do Stasera.mp3" data-title="A Chi Lo Do Stasera">
+        <div class="track-num"><span class="vu-num">02</span><div class="vu"><span></span><span></span><span></span><span></span></div></div>
+        <div class="track-name">A Chi Lo Do Stasera</div><span class="track-type type-song">MP3</span>
+      </div>
+      <div class="track song-track" data-src="audio/mp3/Albachiava.mp3" data-title="Albachiava">
+        <div class="track-num"><span class="vu-num">03</span><div class="vu"><span></span><span></span><span></span><span></span></div></div>
+        <div class="track-name">Albachiava</div><span class="track-type type-song">MP3</span>
+      </div>
+      <div class="track song-track" data-src="audio/mp3/Chi cazz' m' 'o fa fa'.mp3" data-title="Chi cazz' m' 'o fa fa'">
+        <div class="track-num"><span class="vu-num">04</span><div class="vu"><span></span><span></span><span></span><span></span></div></div>
+        <div class="track-name">Chi cazz' m' 'o fa fa'</div><span class="track-type type-song">MP3</span>
+      </div>
+      <div class="track song-track" data-src="audio/mp3/Cornutone.mp3" data-title="Cornutone">
+        <div class="track-num"><span class="vu-num">05</span><div class="vu"><span></span><span></span><span></span><span></span></div></div>
+        <div class="track-name">Cornutone</div><span class="track-type type-song">MP3</span>
+      </div>
+      <div class="track song-track" data-src="audio/mp3/Jammucenne.mp3" data-title="Jammucenne">
+        <div class="track-num"><span class="vu-num">06</span><div class="vu"><span></span><span></span><span></span><span></span></div></div>
+        <div class="track-name">Jammucenne</div><span class="track-type type-song">MP3</span>
+      </div>
+      <div class="track song-track" data-src="audio/mp3/Mi ha rovinato il 68.mp3" data-title="Mi ha rovinato il 68">
+        <div class="track-num"><span class="vu-num">07</span><div class="vu"><span></span><span></span><span></span><span></span></div></div>
+        <div class="track-name">Mi ha rovinato il 68</div><span class="track-type type-song">MP3</span>
+      </div>
+      <div class="track song-track" data-src="audio/mp3/Na Sera 'E Maggio, N' Addore 'E Rose.mp3" data-title="Na Sera 'E Maggio, N' Addore 'E Rose">
+        <div class="track-num"><span class="vu-num">08</span><div class="vu"><span></span><span></span><span></span><span></span></div></div>
+        <div class="track-name">Na Sera 'E Maggio, N' Addore 'E Rose</div><span class="track-type type-song">MP3</span>
+      </div>
+      <div class="track song-track" data-src="audio/mp3/O' Camionista.mp3" data-title="O' Camionista">
+        <div class="track-num"><span class="vu-num">09</span><div class="vu"><span></span><span></span><span></span><span></span></div></div>
+        <div class="track-name">O' Camionista</div><span class="track-type type-song">MP3</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TAB SPEZZONI -->
+<div class="tab-panel" id="tab-spezzoni">
+
+  <div class="album-section">
+    <div class="album-header"><span class="album-icon">◈</span><span class="album-title">Cielo Duro</span><span class="album-count">10 tracce · MP3</span></div>
+    <div class="track-list">
+      <div class="track" data-src="audio/01_Cielo_Duro/01-aaa-me-so-fatt-male.mp3" data-title="AAA! Me so fatto male"><div class="track-num"><span class="vu-num">01</span><div class="vu"><span></span><span></span><span></span><span></span></div></div><div class="track-name">AAA! Me so fatto male</div><span class="track-type type-mp3">MP3</span></div>
+      <div class="track" data-src="audio/01_Cielo_Duro/02-luisa-cervellotica.mp3" data-title="Luisa, cervellotica…"><div class="track-num"><span class="vu-num">02</span><div class="vu"><span></span><span></span><span></span><span></span></div></div><div class="track-name">Luisa, cervellotica…</div><span class="track-type type-mp3">MP3</span></div>
+      <div class="track" data-src="audio/01_Cielo_Duro/03-aaa-afacc.mp3" data-title="AAA! A faccia r'o cazz"><div class="track-num"><span class="vu-num">03</span><div class="vu"><span></span><span></span><span></span><span></span></div></div><div class="track-name">AAA! A faccia r'o cazz</div><span class="track-type type-mp3">MP3</span></div>
+      <div class="track" data-src="audio/01_Cielo_Duro/04-cercasi-vettura-usata.mp3" data-title="AAA! Cercasi vettura usata"><div class="track-num"><span class="vu-num">04</span><div class="vu"><span></span><span></span><span></span><span></span></div></div><div class="track-name">AAA! Cercasi vettura usata</div><span class="track-type type-mp3">MP3</span></div>
+      <div class="track" data-src="audio/01_Cielo_Duro/05-affittasi-seminterrato.mp3" data-title="AAA! Affittasi seminterrato sotto Venezia"><div class="track-num"><span class="vu-num">05</span><div class="vu"><span></span><span></span><span></span><span></span></div></div><div class="track-name">AAA! Affittasi seminterrato sotto Venezia</div><span class="track-type type-mp3">MP3</span></div>
+      <div class="track" data-src="audio/01_Cielo_Duro/06-occasione-ombrello-bucato.mp3" data-title="OCCASIONE! Ombrello bucato"><div class="track-num"><span class="vu-num">06</span><div class="vu"><span></span><span></span><span></span><span></span></div></div><div class="track-name">OCCASIONE! Ombrello bucato</div><span class="track-type type-mp3">MP3</span></div>
+      <div class="track" data-src="audio/01_Cielo_Duro/07-estrazioni-del-lotto.mp3" data-title="Estrazioni del lotto"><div class="track-num"><span class="vu-num">07</span><div class="vu"><span></span><span></span><span></span><span></span></div></div><div class="track-name">Estrazioni del lotto</div><span class="track-type type-mp3">MP3</span></div>
+      <div class="track" data-src="audio/01_Cielo_Duro/08-onda-verde.mp3" data-title="Onda Verde"><div class="track-num"><span class="vu-num">08</span><div class="vu"><span></span><span></span><span></span><span></span></div></div><div class="track-name">Onda Verde</div><span class="track-type type-mp3">MP3</span></div>
+      <div class="track" data-src="audio/01_Cielo_Duro/09-aaa-ambrogio-cerca-amalia.mp3" data-title="Ambrogio cerca Amalia scopo amicizia"><div class="track-num"><span class="vu-num">09</span><div class="vu"><span></span><span></span><span></span><span></span></div></div><div class="track-name">Ambrogio cerca Amalia scopo amicizia</div><span class="track-type type-mp3">MP3</span></div>
+      <div class="track" data-src="audio/01_Cielo_Duro/10-aaa-affittasi-mansarda.mp3" data-title="AAA! Affittasi mansarda sul K2"><div class="track-num"><span class="vu-num">10</span><div class="vu"><span></span><span></span><span></span><span></span></div></div><div class="track-name">AAA! Affittasi mansarda sul K2</div><span class="track-type type-mp3">MP3</span></div>
+    </div>
+  </div>
+
+  <div class="album-section">
+    <div class="album-header"><span class="album-icon">◈</span><span class="album-title">Arrapaho (film, 1984)</span><span class="album-count">1 traccia · MP3</span></div>
+    <div class="track-list">
+      <div class="track" data-src="audio/02_Arrapaho/Palla-Pesante-Capo-di-Bomba-Cavallo.mp3" data-title="Capo di Bomba — Hai tagliato le gambe al cavallo?"><div class="track-num"><span class="vu-num">01</span><div class="vu"><span></span><span></span><span></span><span></span></div></div><div class="track-name">Capo di Bomba — Hai tagliato le gambe al cavallo?</div><span class="track-type type-mp3">MP3</span></div>
+    </div>
+  </div>
+
+  <div class="album-section">
+    <div class="album-header"><span class="album-icon">◈</span><span class="album-title">Uccelli d'Italia</span><span class="album-count">4 tracce · MP3</span></div>
+    <div class="track-list">
+      <div class="track" data-src="audio/03_Uccelli_dItalia/La_Corda.mp3" data-title="Salve, sono Italo La Corda…"><div class="track-num"><span class="vu-num">01</span><div class="vu"><span></span><span></span><span></span><span></span></div></div><div class="track-name">Salve, sono Italo La Corda…</div><span class="track-type type-mp3">MP3</span></div>
+      <div class="track" data-src="audio/03_Uccelli_dItalia/Far_bene_l_amore.mp3" data-title="Amore, come fai bene all'amore…"><div class="track-num"><span class="vu-num">02</span><div class="vu"><span></span><span></span><span></span><span></span></div></div><div class="track-name">Amore, come fai bene all'amore…</div><span class="track-type type-mp3">MP3</span></div>
+      <div class="track" data-src="audio/03_Uccelli_dItalia/La_gomma_Fitent.mp3" data-title="La gomma Fitent"><div class="track-num"><span class="vu-num">03</span><div class="vu"><span></span><span></span><span></span><span></span></div></div><div class="track-name">La gomma Fitent</div><span class="track-type type-mp3">MP3</span></div>
+      <div class="track" data-src="audio/03_Uccelli_dItalia/Cagata.mp3" data-title="Consuma molto?"><div class="track-num"><span class="vu-num">04</span><div class="vu"><span></span><span></span><span></span><span></span></div></div><div class="track-name">Consuma molto?</div><span class="track-type type-mp3">MP3</span></div>
+    </div>
+  </div>
+
+  <div class="album-section">
+    <div class="album-header"><span class="album-icon">◈</span><span class="album-title">Mutando</span><span class="album-count">2 tracce · MP3</span></div>
+    <div class="track-list">
+      <div class="track" data-src="audio/04_Mutando/Nun_se_sent_manc_o_cazz.mp3" data-title="Pronto, pronto? Nun s' sent manc 'o cazz"><div class="track-num"><span class="vu-num">01</span><div class="vu"><span></span><span></span><span></span><span></span></div></div><div class="track-name">Pronto, pronto? Nun s' sent manc 'o cazz</div><span class="track-type type-mp3">MP3</span></div>
+      <div class="track" data-src="audio/04_Mutando/Boletta_del_cazzo.mp3" data-title="Una boletta del cazzo"><div class="track-num"><span class="vu-num">02</span><div class="vu"><span></span><span></span><span></span><span></span></div></div><div class="track-name">Una boletta del cazzo</div><span class="track-type type-mp3">MP3</span></div>
+    </div>
+  </div>
+
+  <div class="album-section">
+    <div class="album-header"><span class="album-icon">◈</span><span class="album-title">Tocca l'albicocca — Confucio</span><span class="album-count">8 tracce · MP3</span></div>
+    <div class="track-list">
+      <div class="track" data-src="audio/05_Tocca_lalbicocca/Ma_allora_era_meglio.mp3" data-title="Ma allora era meglio quando c'erano gli Squallor"><div class="track-num"><span class="vu-num">01</span><div class="vu"><span></span><span></span><span></span><span></span></div></div><div class="track-name">Ma allora era meglio quando c'erano gli Squallor</div><span class="track-type type-mp3">MP3</span></div>
+      <div class="track" data-src="audio/05_Tocca_lalbicocca/Fatti_i_cazzi_tuoi.mp3" data-title="Fatti i cazzi tuoi — Confucio"><div class="track-num"><span class="vu-num">02</span><div class="vu"><span></span><span></span><span></span><span></span></div></div><div class="track-name">Fatti i cazzi tuoi — Confucio</div><span class="track-type type-mp3">MP3</span></div>
+      <div class="track" data-src="audio/05_Tocca_lalbicocca/Ce_simme_rutt_o_cazz.mp3" data-title="Ce simm rutt 'o cazz! — Confucio"><div class="track-num"><span class="vu-num">03</span><div class="vu"><span></span><span></span><span></span><span></span></div></div><div class="track-name">Ce simm rutt 'o cazz! — Confucio</div><span class="track-type type-mp3">MP3</span></div>
+      <div class="track" data-src="audio/05_Tocca_lalbicocca/Lullo_Lallo.mp3" data-title="Lullo lallo lilla lulla — Confucio"><div class="track-num"><span class="vu-num">04</span><div class="vu"><span></span><span></span><span></span><span></span></div></div><div class="track-name">Lullo lallo lilla lulla — Confucio</div><span class="track-type type-mp3">MP3</span></div>
+      <div class="track" data-src="audio/05_Tocca_lalbicocca/Me_sfrantecat_o_cazz.mp3" data-title="M' e sfrantcat 'o cazz! — Confucio"><div class="track-num"><span class="vu-num">05</span><div class="vu"><span></span><span></span><span></span><span></span></div></div><div class="track-name">M' e sfrantcat 'o cazz! — Confucio</div><span class="track-type type-mp3">MP3</span></div>
+      <div class="track" data-src="audio/05_Tocca_lalbicocca/Ladra_chi_non_piglia.mp3" data-title="Ladra chi non piglia — Confucio"><div class="track-num"><span class="vu-num">06</span><div class="vu"><span></span><span></span><span></span><span></span></div></div><div class="track-name">Ladra chi non piglia — Confucio</div><span class="track-type type-mp3">MP3</span></div>
+      <div class="track" data-src="audio/05_Tocca_lalbicocca/Semaforo.mp3" data-title="Semaforo rosso vai. Verde no — Confucio"><div class="track-num"><span class="vu-num">07</span><div class="vu"><span></span><span></span><span></span><span></span></div></div><div class="track-name">Semaforo rosso vai. Verde no — Confucio</div><span class="track-type type-mp3">MP3</span></div>
+      <div class="track" data-src="audio/05_Tocca_lalbicocca/Latrina.mp3" data-title="PRRRRR Latrina! — Confucio"><div class="track-num"><span class="vu-num">08</span><div class="vu"><span></span><span></span><span></span><span></span></div></div><div class="track-name">PRRRRR Latrina! — Confucio</div><span class="track-type type-mp3">MP3</span></div>
+    </div>
+  </div>
+
+  <div class="album-section">
+    <div class="album-header"><span class="album-icon">◈</span><span class="album-title">Cambiamento</span><span class="album-count">9 tracce · MP3</span></div>
+    <div class="track-list">
+      <div class="track" data-src="audio/06_Cambiamento/Cambiamento.mp3" data-title="Son passati 5 anni — Il Cambiamento"><div class="track-num"><span class="vu-num">01</span><div class="vu"><span></span><span></span><span></span><span></span></div></div><div class="track-name">Son passati 5 anni — Il Cambiamento</div><span class="track-type type-mp3">MP3</span></div>
+      <div class="track" data-src="audio/06_Cambiamento/Pitagora.mp3" data-title="3 per 4? Dodici. — Pitagora"><div class="track-num"><span class="vu-num">02</span><div class="vu"><span></span><span></span><span></span><span></span></div></div><div class="track-name">3 per 4? Dodici. — Pitagora</div><span class="track-type type-mp3">MP3</span></div>
+      <div class="track" data-src="audio/06_Cambiamento/Omero.mp3" data-title="Più chiavo e più mi diventa nero — Omero"><div class="track-num"><span class="vu-num">03</span><div class="vu"><span></span><span></span><span></span><span></span></div></div><div class="track-name">Più chiavo e più mi diventa nero — Omero</div><span class="track-type type-mp3">MP3</span></div>
+      <div class="track" data-src="audio/06_Cambiamento/Socrate.mp3" data-title="Salutam' 'a Socrate — di Socrate"><div class="track-num"><span class="vu-num">04</span><div class="vu"><span></span><span></span><span></span><span></span></div></div><div class="track-name">Salutam' 'a Socrate — di Socrate</div><span class="track-type type-mp3">MP3</span></div>
+      <div class="track" data-src="audio/06_Cambiamento/Cicerone.mp3" data-title="Mangiatevi pasta e ceci — Cicerone"><div class="track-num"><span class="vu-num">05</span><div class="vu"><span></span><span></span><span></span><span></span></div></div><div class="track-name">Mangiatevi pasta e ceci — Cicerone</div><span class="track-type type-mp3">MP3</span></div>
+      <div class="track" data-src="audio/06_Cambiamento/Platone_Bastone.mp3" data-title="Platone, allisciam' stu bastone!"><div class="track-num"><span class="vu-num">06</span><div class="vu"><span></span><span></span><span></span><span></span></div></div><div class="track-name">Platone, allisciam' stu bastone!</div><span class="track-type type-mp3">MP3</span></div>
+      <div class="track" data-src="audio/06_Cambiamento/Kant.mp3" data-title="Amar comme sì, te voglio bene — Kant"><div class="track-num"><span class="vu-num">07</span><div class="vu"><span></span><span></span><span></span><span></span></div></div><div class="track-name">Amar comme sì, te voglio bene — Kant</div><span class="track-type type-mp3">MP3</span></div>
+      <div class="track" data-src="audio/06_Cambiamento/Platone_Culone.mp3" data-title="Ah!, me fa male 'o culone — Platone"><div class="track-num"><span class="vu-num">08</span><div class="vu"><span></span><span></span><span></span><span></span></div></div><div class="track-name">Ah!, me fa male 'o culone — Platone</div><span class="track-type type-mp3">MP3</span></div>
+      <div class="track" data-src="audio/06_Cambiamento/Euripide.mp3" data-title="Ci ho un cazzo che sembra un bicipite — Euripide"><div class="track-num"><span class="vu-num">09</span><div class="vu"><span></span><span></span><span></span><span></span></div></div><div class="track-name">Ci ho un cazzo che sembra un bicipite — Euripide</div><span class="track-type type-mp3">MP3</span></div>
+    </div>
+  </div>
+
+</div><!-- /tab-spezzoni -->
+
+
+</main>
+
+<footer>
+  Tutti i diritti sui contenuti audio appartengono agli autori e aventi causa degli Squallor.<br>
+  Fonte originale: <a href="https://www.squallor.com/audio/" target="_blank">squallor.com/audio</a><br>
+  Archivio personale non commerciale a scopo di documentazione.
+</footer>
+
+<script>
+const audio   = document.getElementById('main-audio');
+const npTitle = document.getElementById('np-title');
+const npLabel = document.querySelector('.np-label');
+let   current = null;
+
+
+function setPlaying(el, title) {
+  if (current) current.classList.remove('active','paused');
+  current = el;
+  el.classList.add('active');
+  el.classList.remove('paused');
+  npTitle.textContent = title;
+  npLabel.textContent = '● REC';
+  npLabel.classList.add('blinking');
+  el.scrollIntoView({ behavior:'smooth', block:'nearest' });
+}
+function setPaused() {
+  if (current) current.classList.add('paused');
+  npLabel.textContent = '‖ PAUSE';
+  npLabel.classList.remove('blinking');
+}
+function setStopped() {
+  npTitle.textContent = '— fine playlist —';
+  npLabel.textContent = '■ STOP';
+  npLabel.classList.remove('blinking');
+  if (current) { current.classList.remove('active','paused'); current = null; }
+}
+function playNext() {
+  const panel  = document.querySelector('.tab-panel.active');
+  const tracks = [...(panel ? panel : document).querySelectorAll('.track')];
+  const idx    = current ? tracks.indexOf(current) : -1;
+  if (idx >= 0 && idx < tracks.length - 1) tracks[idx+1].click();
+  else setStopped();
+}
+
+
+
+document.querySelectorAll('.track').forEach(el => {
+  el.addEventListener('click', () => {
+    const src   = el.dataset.src;
+    const title = el.dataset.title;
+
+    if (current === el) {
+      audio.paused ? audio.play() : audio.pause();
+      return;
+    }
+
+    if (current) current.classList.remove('active','paused');
+    current = el;
+    el.classList.add('active');
+    el.classList.remove('paused');
+    npTitle.textContent = title;
+    npLabel.textContent = '● REC';
+    npLabel.classList.add('blinking');
+    el.scrollIntoView({ behavior:'smooth', block:'nearest' });
+
+    audio.src = src.split('/').map((s,i) => i===0 ? s : encodeURIComponent(s)).join('/');
+    audio.play();
+  });
+});
+
+audio.addEventListener('ended', playNext);
+audio.addEventListener('pause', () => { if (current && !audio.ended) setPaused(); });
+audio.addEventListener('play',  () => { if (current) { current.classList.remove('paused'); npLabel.textContent='● REC'; npLabel.classList.add('blinking'); } });
+
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('tab-'+btn.dataset.tab).classList.add('active');
+  });
+});
+</script>
+</body>
+</html>
